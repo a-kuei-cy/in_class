@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明日閱讀_家校共讀家長入班打卡系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        // 配置Tailwind自定義顏色和字體
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6', // 主色調：藍色
+                        secondary: '#10B981', // 輔助色：綠色
+                        accent: '#F59E0B', // 強調色：橙色
+                        danger: '#EF4444', // 危險色：紅色
+                        neutral: '#6B7280', // 中性色：灰色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scale-hover {
+                transition: transform 0.2s ease-in-out;
+            }
+            .scale-hover:hover {
+                transform: scale(1.02);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- 頂部導航欄 -->
+    <header class="bg-white shadow-md fixed w-full top-0 z-50 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800">明日閱讀</h1>
+                <span class="hidden md:inline-block text-sm text-gray-500 ml-2">家校共讀家長入班打卡系統</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 transition-custom">
+                    <i class="fa fa-moon-o text-gray-600"></i>
+                </button>
+                <button id="admin-toggle" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-custom hidden md:block">
+                    <i class="fa fa-cog mr-1"></i> 管理介面
+                </button>
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100">
+                    <i class="fa fa-bars text-gray-600"></i>
+                </button>
+            </div>
+        </div>
+        <!-- 行動端菜單 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-2">
+                <button id="mobile-admin-toggle" class="py-2 px-4 text-left text-primary hover:bg-gray-50 rounded-lg">
+                    <i class="fa fa-cog mr-1"></i> 管理介面
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <!-- 打卡表單區域 -->
+        <section id="checkin-section" class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8 transform transition-all duration-500">
+                <div class="text-center mb-6">
+                    <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-gray-800 mb-2">家長入班打卡</h2>
+                    <p class="text-gray-500">參與家校共讀活動，請完成打卡登記</p>
+                </div>
+                
+                <form id="checkin-form" class="space-y-5">
+                    <div class="space-y-2">
+                        <label for="class" class="block text-sm font-medium text-gray-700">班級 <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa fa-building text-gray-400"></i>
+                            </div>
+                            <select id="class" name="class" required
+                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom">
+                                <option value="">請選擇班級</option>
+                                <!-- 班級選項將通過JavaScript動態生成 -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="parent-name" class="block text-sm font-medium text-gray-700">家長姓名 <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa fa-user text-gray-400"></i>
+                            </div>
+                            <input type="text" id="parent-name" name="parent-name" required
+                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom"
+                                placeholder="請輸入您的姓名">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="checkin-date" class="block text-sm font-medium text-gray-700">日期 <span class="text-red-500">*</span></label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fa fa-calendar text-gray-400"></i>
+                            </div>
+                            <input type="date" id="checkin-date" name="checkin-date" required
+                                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom">
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom flex justify-center items-center group">
+                            <span>完成打卡</span>
+                            <i class="fa fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 打卡統計 -->
+            <div class="bg-white rounded-2xl card-shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">今日打卡統計</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-blue-50 p-4 rounded-xl">
+                        <p class="text-sm text-gray-500 mb-1">一年級</p>
+                        <p class="text-2xl font-bold text-primary" id="grade1-count">12</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl">
+                        <p class="text-sm text-gray-500 mb-1">二年級</p>
+                        <p class="text-2xl font-bold text-secondary" id="grade2-count">8</p>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-xl">
+                        <p class="text-sm text-gray-500 mb-1">三年級</p>
+                        <p class="text-2xl font-bold text-accent" id="grade3-count">15</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-xl">
+                        <p class="text-sm text-gray-500 mb-1">總計</p>
+                        <p class="text-2xl font-bold text-purple-600" id="total-count">35</p>
+                    </div>
+                </div>
+                <div class="mt-6 h-64">
+                    <canvas id="checkin-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- 管理介面區域 -->
+        <section id="admin-section" class="max-w-5xl mx-auto hidden">
+            <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-800">管理介面</h2>
+                    <button id="back-to-checkin" class="text-primary hover:text-primary/80 transition-custom">
+                        <i class="fa fa-arrow-left mr-1"></i> 返回打卡
+                    </button>
+                </div>
+
+                <!-- 管理員登錄 -->
+                <div id="admin-login" class="max-w-md mx-auto">
+                    <div class="text-center mb-6">
+                        <i class="fa fa-lock text-4xl text-primary/70 mb-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-800">請輸入管理員密碼</h3>
+                    </div>
+                    <form id="login-form" class="space-y-4">
+                        <div>
+                            <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">管理員密碼</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa fa-key text-gray-400"></i>
+                                </div>
+                                <input type="password" id="admin-password" required
+                                    class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom"
+                                    placeholder="請輸入密碼">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom">
+                            登錄
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 管理員功能區 -->
+                <div id="admin-functions" class="hidden">
+                    <!-- 管理功能標籤頁 -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <ul class="flex flex-wrap -mb-px" id="admin-tabs" role="tablist">
+                            <li class="mr-2" role="presentation">
+                                <button class="admin-tab active py-4 px-5 text-sm font-medium text-center border-b-2 border-primary text-primary" 
+                                        id="records-tab" data-tab="records-content">
+                                    打卡記錄
+                                </button>
+                            </li>
+                            <li class="mr-2" role="presentation">
+                                <button class="admin-tab py-4 px-5 text-sm font-medium text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                                        id="classes-tab" data-tab="classes-content">
+                                    班級管理
+                                </button>
+                            </li>
+                            <li role="presentation">
+                                <button class="admin-tab py-4 px-5 text-sm font-medium text-center border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                                        id="archive-tab" data-tab="archive-content">
+                                    數據存檔
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- 打卡記錄內容 -->
+                    <div id="records-content" class="admin-tab-content">
+                        <!-- 管理功能按鈕組 -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                            <button id="import-data-btn" class="bg-green-50 hover:bg-green-100 p-4 rounded-xl text-left transition-custom scale-hover">
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mr-4">
+                                        <i class="fa fa-download text-secondary text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">導入數據</h4>
+                                        <p class="text-sm text-gray-500">批量導入打卡記錄</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button id="export-data-btn" class="bg-purple-50 hover:bg-purple-100 p-4 rounded-xl text-left transition-custom scale-hover">
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center mr-4">
+                                        <i class="fa fa-upload text-purple-500 text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">導出數據</h4>
+                                        <p class="text-sm text-gray-500">導出打卡記錄數據</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button id="reset-data-btn" class="bg-red-50 hover:bg-red-100 p-4 rounded-xl text-left transition-custom scale-hover">
+                                <div class="flex items-center">
+                                    <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center mr-4">
+                                        <i class="fa fa-trash text-danger text-xl"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">重置數據</h4>
+                                        <p class="text-sm text-gray-500">清空所有打卡記錄</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- 打卡記錄表格 -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">打卡記錄管理</h3>
+                                <div class="flex space-x-2">
+                                    <div class="relative">
+                                        <input type="text" id="search-records" 
+                                            class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom text-sm"
+                                            placeholder="搜索記錄...">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <i class="fa fa-search text-gray-400 text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <select id="filter-class" 
+                                        class="border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom text-sm px-3 py-2">
+                                        <option value="">所有班級</option>
+                                        <!-- 班級選項將通過JavaScript動態生成 -->
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="overflow-x-auto rounded-xl border border-gray-200">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">序號</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">班級</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">家長姓名</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">打卡日期</th>
+                                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="records-table-body" class="bg-white divide-y divide-gray-200">
+                                        <!-- 表格內容將通過JavaScript動態生成 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="mt-4 flex justify-between items-center">
+                                <p class="text-sm text-gray-500">顯示 <span id="showing-count">1-10</span> 條，共 <span id="total-records">0</span> 條記錄</p>
+                                <div class="flex space-x-1">
+                                    <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50" id="prev-page" disabled>
+                                        <i class="fa fa-chevron-left text-xs"></i>
+                                    </button>
+                                    <button class="px-3 py-1 border border-gray-300 bg-primary text-white rounded" data-page="1">1</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50" data-page="2">2</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50" data-page="3">3</button>
+                                    <button class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50" id="next-page">
+                                        <i class="fa fa-chevron-right text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 班級管理內容 -->
+                    <div id="classes-content" class="admin-tab-content hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800">班級管理</h3>
+                            <button id="add-class-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-custom flex items-center">
+                                <i class="fa fa-plus mr-2"></i> 新增班級
+                            </button>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-xl p-5 mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="classes-grid">
+                                <!-- 班級卡片將通過JavaScript動態生成 -->
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fa fa-info-circle text-primary"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        刪除班級將同時刪除該班級的所有打卡記錄，請謹慎操作。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 數據存檔內容 -->
+                    <div id="archive-content" class="admin-tab-content hidden">
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">數據存檔管理</h3>
+                            
+                            <div class="mb-6">
+                                <button id="create-archive-btn" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-6 rounded-lg transition-custom flex items-center">
+                                    <i class="fa fa-save mr-2"></i> 建立新存檔
+                                </button>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-xl p-5">
+                                <h4 class="font-medium text-gray-800 mb-4">現有存檔</h4>
+                                
+                                <div id="archives-list" class="space-y-3">
+                                    <!-- 存檔項目將通過JavaScript動態生成 -->
+                                </div>
+                                
+                                <div id="no-archives" class="text-center py-10 text-gray-500">
+                                    <i class="fa fa-folder-open-o text-4xl mb-3 opacity-30"></i>
+                                    <p>尚未建立任何存檔</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 頁腳 -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center">
+                        <i class="fa fa-book text-primary text-xl mr-2"></i>
+                        <h2 class="text-lg font-bold">明日閱讀</h2>
+                    </div>
+                    <p class="text-gray-400 text-sm mt-1">家校共讀 · 攜手成長</p>
+                </div>
+                <div class="text-center md:text-right text-gray-400 text-sm">
+                    <p>© 2023 明日閱讀家校共讀計畫</p>
+                    <p class="mt-1">聯繫我們: contact@mingrireading.com</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 打卡成功彈窗 -->
+    <div id="success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-check text-2xl text-secondary"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">打卡成功！</h3>
+                <p class="text-gray-500 mb-6">感謝您參與家校共讀活動</p>
+                <div id="checkin-details" class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                    <p class="mb-2"><span class="font-medium text-gray-700">班級：</span><span id="detail-class">一年級1班</span></p>
+                    <p class="mb-2"><span class="font-medium text-gray-700">家長姓名：</span><span id="detail-name">張三</span></p>
+                    <p><span class="font-medium text-gray-700">打卡日期：</span><span id="detail-date">2023-06-15</span></p>
+                </div>
+                <button id="close-modal" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-custom w-full">
+                    完成
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 班級表單彈窗 -->
+    <div id="class-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800" id="class-modal-title">新增班級</h3>
+                <button id="close-class-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <form id="class-form" class="space-y-4">
+                <input type="hidden" id="class-id">
+                <div>
+                    <label for="class-name" class="block text-sm font-medium text-gray-700 mb-1">班級名稱</label>
+                    <input type="text" id="class-name" required
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom"
+                        placeholder="例如：一年級1班">
+                </div>
+                <div>
+                    <label for="class-grade" class="block text-sm font-medium text-gray-700 mb-1">所屬年級</label>
+                    <select id="class-grade" required
+                        class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary transition-custom">
+                        <option value="一年級">一年級</option>
+                        <option value="二年級">二年級</option>
+                        <option value="三年級">三年級</option>
+                        <option value="四年級">四年級</option>
+                        <option value="五年級">五年級</option>
+                        <option value="六年級">六年級</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom">
+                    <span id="class-form-btn-text">新增班級</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 導入數據彈窗 -->
+    <div id="import-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">導入打卡數據</h3>
+                <button id="close-import-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <p class="text-gray-500 mb-4 text-sm">請上傳CSV格式的打卡數據文件，格式要求：班級,家長姓名,日期</p>
+            <form id="import-form" class="space-y-4">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-custom">
+                    <i class="fa fa-file-text-o text-3xl text-gray-400 mb-2"></i>
+                    <p class="text-sm text-gray-500 mb-3">拖放CSV文件到此处，或點擊選擇文件</p>
+                    <input type="file" id="import-file" accept=".csv" class="hidden">
+                    <button type="button" id="browse-file" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-custom">
+                        選擇文件
+                    </button>
+                </div>
+                <div id="file-name-display" class="hidden text-sm text-gray-600"></div>
+                <button type="submit" class="w-full bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-4 rounded-lg transition-custom">
+                    確認導入
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 重置數據確認彈窗 -->
+    <div id="reset-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">確認重置數據</h3>
+                <button id="close-reset-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-exclamation-triangle text-2xl text-danger"></i>
+                </div>
+                <p class="text-gray-700">您確定要清空所有打卡記錄嗎？</p>
+                <p class="text-gray-500 text-sm mt-2">此操作不可逆，所有數據將會被永久刪除</p>
+            </div>
+            <div class="flex space-x-3">
+                <button id="cancel-reset" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-custom">
+                    取消
+                </button>
+                <button id="confirm-reset" class="flex-1 bg-danger hover:bg-danger/90 text-white font-medium py-3 px-4 rounded-lg transition-custom">
+                    確認重置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刪除確認彈窗 -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">確認刪除</h3>
+                <button id="close-delete-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-trash text-2xl text-danger"></i>
+                </div>
+                <p class="text-gray-700" id="delete-confirm-text">您確定要刪除這條記錄嗎？</p>
+                <p class="text-gray-500 text-sm mt-2">此操作不可逆，相關數據將會被永久刪除</p>
+            </div>
+            <div class="flex space-x-3">
+                <button id="cancel-delete" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-custom">
+                    取消
+                </button>
+                <button id="confirm-delete" class="flex-1 bg-danger hover:bg-danger/90 text-white font-medium py-3 px-4 rounded-lg transition-custom">
+                    確認刪除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示消息 -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center">
+        <i id="toast-icon" class="fa fa-check-circle mr-2"></i>
+        <span id="toast-message">操作成功</span>
+    </div>
+
+    <script>
+        // 全局數據存儲
+        let appData = {
+            classes: [
+                { id: 1, name: '一年級1班', grade: '一年級' },
+                { id: 2, name: '一年級2班', grade: '一年級' },
+                { id: 3, name: '二年級1班', grade: '二年級' },
+                { id: 4, name: '二年級2班', grade: '二年級' },
+                { id: 5, name: '三年級1班', grade: '三年級' },
+                { id: 6, name: '三年級2班', grade: '三年級' }
+            ],
+            records: [],
+            archives: []
+        };
+        
+        // 初始化日期為今天
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('checkin-date').value = today;
+            
+            // 加載本地存儲的數據
+            loadData();
+            
+            // 初始化班級選項
+            renderClassOptions();
+            
+            // 初始化圖表
+            initChart();
+            
+            // 生成模擬數據（如果沒有現有數據）
+            if (appData.records.length === 0) {
+                generateMockData();
+            } else {
+                renderRecords(appData.records);
+            }
+            
+            // 渲染班級列表
+            renderClasses();
+            
+            // 渲染存檔列表
+            renderArchives();
+            
+            // 行動端菜單切換
+            document.getElementById('mobile-menu-btn').addEventListener('click', function() {
+                const mobileMenu = document.getElementById('mobile-menu');
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // 導航欄滾動效果
+            window.addEventListener('scroll', function() {
+                const navbar = document.getElementById('navbar');
+                if (window.scrollY > 10) {
+                    navbar.classList.add('py-2');
+                    navbar.classList.remove('py-3');
+                } else {
+                    navbar.classList.add('py-3');
+                    navbar.classList.remove('py-2');
+                }
+            });
+            
+            // 打卡表單提交
+            document.getElementById('checkin-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const className = document.getElementById('class').value;
+                const parentName = document.getElementById('parent-name').value;
+                const checkinDate = document.getElementById('checkin-date').value;
+                
+                // 更新詳情信息
+                document.getElementById('detail-class').textContent = className;
+                document.getElementById('detail-name').textContent = parentName;
+                document.getElementById('detail-date').textContent = checkinDate;
+                
+                // 顯示成功彈窗
+                const modal = document.getElementById('success-modal');
+                modal.classList.remove('hidden');
+                // 觸發動畫
+                setTimeout(() => {
+                    modal.classList.add('opacity-100');
+                    modal.querySelector('div').classList.remove('scale-95');
+                    modal.querySelector('div').classList.add('scale-100');
+                }, 10);
+                
+                // 添加到記錄列表
+                addNewRecord(className, parentName, checkinDate);
+                
+                // 重置表單
+                this.reset();
+                document.getElementById('checkin-date').value = today;
+            });
+            
+            // 關閉打卡成功彈窗
+            document.getElementById('close-modal').addEventListener('click', function() {
+                closeModal('success-modal');
+            });
+            
+            // 切換到管理介面
+            document.getElementById('admin-toggle').addEventListener('click', function() {
+                switchToAdmin();
+            });
+            document.getElementById('mobile-admin-toggle').addEventListener('click', function() {
+                document.getElementById('mobile-menu').classList.add('hidden');
+                switchToAdmin();
+            });
+            
+            // 返回打卡介面
+            document.getElementById('back-to-checkin').addEventListener('click', function() {
+                document.getElementById('admin-section').classList.add('hidden');
+                document.getElementById('checkin-section').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            });
+            
+            // 管理員登錄
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const password = document.getElementById('admin-password').value;
+                
+                // 簡單驗證（實際應用中應該與後端交互）
+                if (password === 'admin123') { // 默認密碼
+                    document.getElementById('admin-login').classList.add('hidden');
+                    document.getElementById('admin-functions').classList.remove('hidden');
+                    showToast('登錄成功', 'success');
+                } else {
+                    showToast('密碼錯誤，請重試', 'error');
+                }
+            });
+            
+            // 管理標籤頁切換
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有標籤的活躍狀態
+                    document.querySelectorAll('.admin-tab').forEach(t => {
+                        t.classList.remove('active', 'border-primary', 'text-primary');
+                        t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    });
+                    
+                    // 添加當前標籤的活躍狀態
+                    this.classList.add('active', 'border-primary', 'text-primary');
+                    this.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    
+                    // 隱藏所有內容
+                    document.querySelectorAll('.admin-tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // 顯示對應內容
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.remove('hidden');
+                });
+            });
+            
+            // 導入數據相關
+            document.getElementById('import-data-btn').addEventListener('click', function() {
+                openModal('import-modal');
+            });
+            document.getElementById('close-import-modal').addEventListener('click', function() {
+                closeModal('import-modal');
+            });
+            document.getElementById('browse-file').addEventListener('click', function() {
+                document.getElementById('import-file').click();
+            });
+            document.getElementById('import-file').addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    const fileName = e.target.files[0].name;
+                    document.getElementById('file-name-display').textContent = `已選擇文件: ${fileName}`;
+                    document.getElementById('file-name-display').classList.remove('hidden');
+                }
+            });
+            document.getElementById('import-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById('import-file');
+                
+                if (fileInput.files.length === 0) {
+                    showToast('請選擇要導入的文件', 'error');
+                    return;
+                }
+                
+                // 模擬導入成功
+                closeModal('import-modal');
+                this.reset();
+                document.getElementById('file-name-display').classList.add('hidden');
+                showToast('數據導入成功', 'success');
+            });
+            
+            // 導出數據
+            document.getElementById('export-data-btn').addEventListener('click', function() {
+                if (appData.records.length === 0) {
+                    showToast('沒有可導出的記錄', 'warning');
+                    return;
+                }
+                
+                // 模擬導出CSV
+                let csvContent = "班級,家長姓名,打卡日期\n";
+                appData.records.forEach(record => {
+                    csvContent += `${record.class},${record.name},${record.date}\n`;
+                });
+                
+                // 創建下載鏈接
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', `打卡記錄_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('數據導出成功', 'success');
+            });
+            
+            // 重置數據相關
+            document.getElementById('reset-data-btn').addEventListener('click', function() {
+                if (appData.records.length === 0) {
+                    showToast('沒有可重置的數據', 'warning');
+                    return;
+                }
+                
+                openModal('reset-modal');
+            });
+            document.getElementById('close-reset-modal').addEventListener('click', function() {
+                closeModal('reset-modal');
+            });
+            document.getElementById('cancel-reset').addEventListener('click', function() {
+                closeModal('reset-modal');
+            });
+            document.getElementById('confirm-reset').addEventListener('click', function() {
+                // 清空表格數據
+                const tableBody = document.getElementById('records-table-body');
+                const rows = tableBody.querySelectorAll('tr');
+                
+                // 添加淡出動畫
+                rows.forEach((row, index) => {
+                    setTimeout(() => {
+                        row.classList.add('opacity-0');
+                        if (index === rows.length - 1) {
+                            setTimeout(() => {
+                                // 清空記錄數據
+                                appData.records = [];
+                                renderRecords(appData.records);
+                                
+                                // 更新統計數據
+                                updateStatistics();
+                                
+                                // 保存數據
+                                saveData();
+                                
+                                closeModal('reset-modal');
+                                showToast('所有數據已重置', 'success');
+                            }, 300);
+                        }
+                    }, index * 100);
+                });
+            });
+            
+            // 班級管理相關
+            document.getElementById('add-class-btn').addEventListener('click', function() {
+                // 重置表單
+                document.getElementById('class-form').reset();
+                document.getElementById('class-id').value = '';
+                document.getElementById('class-modal-title').textContent = '新增班級';
+                document.getElementById('class-form-btn-text').textContent = '新增班級';
+                
+                openModal('class-modal');
+            });
+            
+            document.getElementById('close-class-modal').addEventListener('click', function() {
+                closeModal('class-modal');
+            });
+            
+            document.getElementById('class-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const classId = document.getElementById('class-id').value;
+                const className = document.getElementById('class-name').value;
+                const classGrade = document.getElementById('class-grade').value;
+                
+                // 檢查班級名稱是否已存在
+                const nameExists = appData.classes.some(c => c.name === className && c.id.toString() !== classId);
+                if (nameExists) {
+                    showToast('該班級名稱已存在', 'error');
+                    return;
+                }
+                
+                if (classId) {
+                    // 更新現有班級
+                    const index = appData.classes.findIndex(c => c.id.toString() === classId);
+                    if (index !== -1) {
+                        appData.classes[index] = {
+                            id: parseInt(classId),
+                            name: className,
+                            grade: classGrade
+                        };
+                        showToast('班級更新成功', 'success');
+                    }
+                } else {
+                    // 添加新班級
+                    const newId = appData.classes.length > 0 
+                        ? Math.max(...appData.classes.map(c => c.id)) + 1 
+                        : 1;
+                    
+                    appData.classes.push({
+                        id: newId,
+                        name: className,
+                        grade: classGrade
+                    });
+                    
+                    showToast('班級新增成功', 'success');
+                }
+                
+                // 重新渲染班級列表和選項
+                renderClasses();
+                renderClassOptions();
+                
+                // 保存數據
+                saveData();
+                
+                // 關閉彈窗
+                closeModal('class-modal');
+            });
+            
+            // 刪除確認相關
+            document.getElementById('close-delete-modal').addEventListener('click', function() {
+                closeModal('delete-modal');
+            });
+            
+            document.getElementById('cancel-delete').addEventListener('click', function() {
+                closeModal('delete-modal');
+            });
+            
+            // 存檔管理相關
+            document.getElementById('create-archive-btn').addEventListener('click', function() {
+                if (appData.records.length === 0) {
+                    showToast('沒有可存檔的數據', 'warning');
+                    return;
+                }
+                
+                // 創建新存檔
+                const now = new Date();
+                const archiveId = appData.archives.length > 0 
+                    ? Math.max(...appData.archives.map(a => a.id)) + 1 
+                    : 1;
+                
+                const newArchive = {
+                    id: archiveId,
+                    name: `存檔_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`,
+                    date: now.toISOString().split('T')[0],
+                    recordCount: appData.records.length
+                };
+                
+                appData.archives.unshift(newArchive);
+                
+                // 保存數據
+                saveData();
+                
+                // 重新渲染存檔列表
+                renderArchives();
+                
+                showToast('數據存檔成功', 'success');
+            });
+        });
+        
+        // 切換到管理介面
+        function switchToAdmin() {
+            document.getElementById('checkin-section').classList.add('hidden');
+            document.getElementById('admin-section').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+        
+        // 打開彈窗
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modal.querySelector('div').classList.remove('scale-95');
+                modal.querySelector('div').classList.add('scale-100');
+            }, 10);
+        }
+        
+        // 關閉彈窗
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('opacity-100');
+            modal.querySelector('div').classList.remove('scale-100');
+            modal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        // 顯示提示消息
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastMessage = document.getElementById('toast-message');
+            
+            // 設置消息和圖標
+            toastMessage.textContent = message;
+            toastIcon.className = '';
+            
+            if (type === 'success') {
+                toastIcon.classList.add('fa', 'fa-check-circle', 'mr-2', 'text-green-400');
+            } else if (type === 'error') {
+                toastIcon.classList.add('fa', 'fa-exclamation-circle', 'mr-2', 'text-red-400');
+            } else if (type === 'warning') {
+                toastIcon.classList.add('fa', 'fa-exclamation-triangle', 'mr-2', 'text-yellow-400');
+            }
+            
+            // 顯示提示
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            // 3秒後隱藏
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+        
+        // 初始化打卡統計圖表
+        function initChart() {
+            const ctx = document.getElementById('checkin-chart').getContext('2d');
+            
+            // 銷毀現有圖表（如果存在）
+            if (window.checkinChartInstance) {
+                window.checkinChartInstance.destroy();
+            }
+            
+            // 計算每個班級的打卡人數
+            const classCounts = {};
+            appData.classes.forEach(cls => {
+                classCounts[cls.name] = appData.records.filter(r => r.class === cls.name).length;
+            });
+            
+            // 準備圖表數據
+            const labels = appData.classes.map(cls => cls.name);
+            const data = labels.map(label => classCounts[label] || 0);
+            const backgroundColors = labels.map((_, index) => {
+                const alpha = index % 2 === 0 ? 0.7 : 0.5;
+                const grade = appData.classes.find(c => c.name === labels[index]).grade;
+                
+                if (grade === '一年級') return `rgba(59, 130, 246, ${alpha})`;
+                if (grade === '二年級') return `rgba(16, 185, 129, ${alpha})`;
+                return `rgba(245, 158, 11, ${alpha})`;
+            });
+            
+            const borderColors = labels.map(label => {
+                const grade = appData.classes.find(c => c.name === label).grade;
+                if (grade === '一年級') return 'rgb(59, 130, 246)';
+                if (grade === '二年級') return 'rgb(16, 185, 129)';
+                return 'rgb(245, 158, 11)';
+            });
+            
+            window.checkinChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '今日打卡人數',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 生成模擬打卡記錄數據
+        function generateMockData() {
+            const records = [
+                { class: '一年級1班', name: '張三', date: new Date().toISOString().split('T')[0] },
+                { class: '一年級1班', name: '李四', date: new Date().toISOString().split('T')[0] },
+                { class: '一年級2班', name: '王五', date: new Date().toISOString().split('T')[0] },
+                { class: '二年級1班', name: '趙六', date: new Date().toISOString().split('T')[0] },
+                { class: '二年級1班', name: '錢七', date: new Date().toISOString().split('T')[0] },
+                { class: '二年級2班', name: '孫八', date: new Date().toISOString().split('T')[0] },
+                { class: '三年級1班', name: '周九', date: new Date().toISOString().split('T')[0] },
+                { class: '三年級1班', name: '吳十', date: new Date().toISOString().split('T')[0] },
+                { class: '三年級2班', name: '鄭一', date: new Date().toISOString().split('T')[0] },
+                { class: '三年級2班', name: '王二', date: new Date().toISOString().split('T')[0] }
+            ];
+            
+            appData.records = records;
+            saveData();
+            renderRecords(records);
+            updateStatistics();
+        }
+        
+        // 渲染打卡記錄表格
+        function renderRecords(records) {
+            const tableBody = document.getElementById('records-table-body');
+            tableBody.innerHTML = '';
+            
+            if (records.length === 0) {
+                // 顯示空狀態
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                        <i class="fa fa-file-text-o text-4xl mb-3 opacity-30"></i>
+                        <p>沒有找到打卡記錄</p>
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
+                
+                // 更新記錄計數
+                document.getElementById('total-records').textContent = '0';
+                document.getElementById('showing-count').textContent = '0-0';
+                return;
+            }
+            
+            records.forEach((record, index) => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-custom';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.class}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.date}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="text-primary hover:text-primary/80 mr-3 edit-record" data-index="${index}">編輯</button>
+                        <button class="text-red-500 hover:text-red-700 delete-record" data-index="${index}">刪除</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 更新記錄計數
+            document.getElementById('total-records').textContent = records.length;
+            document.getElementById('showing-count').textContent = `1-${Math.min(records.length, 10)}`;
+            
+            // 添加編輯和刪除事件監聽
+            document.querySelectorAll('.edit-record').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const record = appData.records[index];
+                    
+                    // 在實際應用中，這裡可以打開編輯表單
+                    showToast(`編輯第 ${index + 1} 條記錄: ${record.name} (${record.class})`, 'warning');
+                });
+            });
+            
+            document.querySelectorAll('.delete-record').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const record = appData.records[index];
+                    
+                    // 設置刪除確認信息
+                    document.getElementById('delete-confirm-text').textContent = 
+                        `您確定要刪除 ${record.class} ${record.name} 的打卡記錄嗎？`;
+                    
+                    // 存儲要刪除的索引
+                    document.getElementById('confirm-delete').setAttribute('data-action', 'record');
+                    document.getElementById('confirm-delete').setAttribute('data-index', index);
+                    
+                    openModal('delete-modal');
+                });
+            });
+        }
+        
+        // 添加新的打卡記錄
+        function addNewRecord(className, parentName, checkinDate) {
+            const newRecord = {
+                class: className,
+                name: parentName,
+                date: checkinDate
+            };
+            
+            appData.records.unshift(newRecord);
+            saveData();
+            
+            // 重新渲染記錄
+            renderRecords(appData.records);
+            
+            // 更新統計
+            updateStatistics();
+        }
+        
+        // 更新記錄序號
+        function updateRecordNumbers() {
+            const rows = document.querySelectorAll('#records-table-body tr');
+            rows.forEach((row, index) => {
+                if (row.querySelector('td:first-child')) {
+                    row.querySelector('td:first-child').textContent = index + 1;
+                    // 更新按鈕的data-index屬性
+                    if (row.querySelector('.edit-record')) {
+                        row.querySelector('.edit-record').setAttribute('data-index', index);
+                        row.querySelector('.delete-record').setAttribute('data-index', index);
+                    }
+                }
+            });
+            // 更新記錄計數
+            document.getElementById('total-records').textContent = rows.length;
+        }
+        
+        // 渲染班級選項
+        function renderClassOptions() {
+            // 打卡表單中的班級選擇
+            const classSelect = document.getElementById('class');
+            const filterSelect = document.getElementById('filter-class');
+            
+            // 保存當前選擇的值
+            const currentValue = classSelect.value;
+            
+            // 清空現有選項（保留第一個"請選擇班級"）
+            while (classSelect.options.length > 1) {
+                classSelect.remove(1);
+            }
+            
+            // 清空過濾器選項（保留第一個"所有班級"）
+            while (filterSelect.options.length > 1) {
+                filterSelect.remove(1);
+            }
+            
+            // 添加班級選項
+            appData.classes.forEach(cls => {
+                // 打卡表單的選項
+                const option = document.createElement('option');
+                option.value = cls.name;
+                option.textContent = cls.name;
+                classSelect.appendChild(option);
+                
+                // 過濾器的選項
+                const filterOption = document.createElement('option');
+                filterOption.value = cls.name;
+                filterOption.textContent = cls.name;
+                filterSelect.appendChild(filterOption);
+            });
+            
+            // 恢復選擇的值（如果存在）
+            if (currentValue && appData.classes.some(c => c.name === currentValue)) {
+                classSelect.value = currentValue;
+            }
+            
+            // 添加過濾事件
+            filterSelect.addEventListener('change', function() {
+                const filterValue = this.value;
+                if (filterValue === '') {
+                    renderRecords(appData.records);
+                } else {
+                    const filtered = appData.records.filter(r => r.class === filterValue);
+                    renderRecords(filtered);
+                }
+            });
+        }
+        
+        // 渲染班級列表
+        function renderClasses() {
+            const classesGrid = document.getElementById('classes-grid');
+            classesGrid.innerHTML = '';
+            
+            if (appData.classes.length === 0) {
+                classesGrid.innerHTML = `
+                    <div class="col-span-full text-center py-10 text-gray-500">
+                        <i class="fa fa-building-o text-4xl mb-3 opacity-30"></i>
+                        <p>尚未創建任何班級</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            appData.classes.forEach(cls => {
+                const classCard = document.createElement('div');
+                classCard.className = 'bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-custom';
+                classCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="font-medium text-gray-800">${cls.name}</h4>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">${cls.grade}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4">
+                        打卡人數: <span class="font-medium">${appData.records.filter(r => r.class === cls.name).length}</span>
+                    </p>
+                    <div class="flex space-x-2">
+                        <button class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm py-2 px-3 rounded-lg transition-custom edit-class" data-id="${cls.id}">
+                            <i class="fa fa-pencil mr-1"></i> 編輯
+                        </button>
+                        <button class="flex-1 bg-red-50 hover:bg-red-100 text-danger text-sm py-2 px-3 rounded-lg transition-custom delete-class" data-id="${cls.id}" data-name="${cls.name}">
+                            <i class="fa fa-trash mr-1"></i> 刪除
+                        </button>
+                    </div>
+                `;
+                classesGrid.appendChild(classCard);
+            });
+            
+            // 添加班級編輯事件
+            document.querySelectorAll('.edit-class').forEach(button => {
+                button.addEventListener('click', function() {
+                    const classId = this.getAttribute('data-id');
+                    const cls = appData.classes.find(c => c.id.toString() === classId);
+                    
+                    if (cls) {
+                        document.getElementById('class-id').value = cls.id;
+                        document.getElementById('class-name').value = cls.name;
+                        document.getElementById('class-grade').value = cls.grade;
+                        document.getElementById('class-modal-title').textContent = '編輯班級';
+                        document.getElementById('class-form-btn-text').textContent = '更新班級';
+                        
+                        openModal('class-modal');
+                    }
+                });
+            });
+            
+            // 添加班級刪除事件
+            document.querySelectorAll('.delete-class').forEach(button => {
+                button.addEventListener('click', function() {
+                    const classId = this.getAttribute('data-id');
+                    const className = this.getAttribute('data-name');
+                    
+                    // 檢查是否有相關記錄
+                    const relatedRecords = appData.records.filter(r => r.class === className).length;
+                    
+                    // 設置刪除確認信息
+                    if (relatedRecords > 0) {
+                        document.getElementById('delete-confirm-text').textContent = 
+                            `您確定要刪除 ${className} 嗎？這將同時刪除該班級的 ${relatedRecords} 條打卡記錄。`;
+                    } else {
+                        document.getElementById('delete-confirm-text').textContent = 
+                            `您確定要刪除 ${className} 嗎？`;
+                    }
+                    
+                    // 存儲要刪除的班級ID
+                    document.getElementById('confirm-delete').setAttribute('data-action', 'class');
+                    document.getElementById('confirm-delete').setAttribute('data-id', classId);
+                    
+                    openModal('delete-modal');
+                });
+            });
+            
+            // 設置刪除確認按鈕事件
+            document.getElementById('confirm-delete').addEventListener('click', function() {
+                const action = this.getAttribute('data-action');
+                
+                if (action === 'record') {
+                    // 刪除打卡記錄
+                    const index = parseInt(this.getAttribute('data-index'));
+                    appData.records.splice(index, 1);
+                    saveData();
+                    
+                    // 重新渲染記錄
+                    renderRecords(appData.records);
+                    
+                    // 更新統計
+                    updateStatistics();
+                    
+                    showToast('打卡記錄已刪除', 'success');
+                } else if (action === 'class') {
+                    // 刪除班級
+                    const classId = this.getAttribute('data-id');
+                    const cls = appData.classes.find(c => c.id.toString() === classId);
+                    
+                    if (cls) {
+                        // 同時刪除相關的打卡記錄
+                        appData.records = appData.records.filter(r => r.class !== cls.name);
+                        
+                        // 刪除班級
+                        appData.classes = appData.classes.filter(c => c.id.toString() !== classId);
+                        
+                        // 保存數據
+                        saveData();
+                        
+                        // 重新渲染班級和記錄
+                        renderClasses();
+                        renderClassOptions();
+                        renderRecords(appData.records);
+                        
+                        // 更新統計
+                        updateStatistics();
+                        
+                        showToast(`班級 ${cls.name} 已刪除`, 'success');
+                    }
+                }
+                
+                closeModal('delete-modal');
+            });
+        }
+        
+        // 渲染存檔列表
+        function renderArchives() {
+            const archivesList = document.getElementById('archives-list');
+            const noArchives = document.getElementById('no-archives');
+            
+            archivesList.innerHTML = '';
+            
+            if (appData.archives.length === 0) {
+                noArchives.classList.remove('hidden');
+                return;
+            }
+            
+            noArchives.classList.add('hidden');
+            
+            appData.archives.forEach(archive => {
+                const archiveItem = document.createElement('div');
+                archiveItem.className = 'bg-white rounded-lg p-4 shadow-sm flex justify-between items-center';
+                archiveItem.innerHTML = `
+                    <div>
+                        <h5 class="font-medium text-gray-800">${archive.name}</h5>
+                        <p class="text-sm text-gray-500">
+                            建立日期: ${archive.date} · 包含 ${archive.recordCount} 條記錄
+                        </p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-custom restore-archive" data-id="${archive.id}">
+                            <i class="fa fa-refresh"></i>
+                        </button>
+                        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg transition-custom download-archive" data-id="${archive.id}">
+                            <i class="fa fa-download"></i>
+                        </button>
+                        <button class="bg-red-50 hover:bg-red-100 text-danger p-2 rounded-lg transition-custom delete-archive" data-id="${archive.id}" data-name="${archive.name}">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                archivesList.appendChild(archiveItem);
+            });
+            
+            // 添加存檔操作事件
+            document.querySelectorAll('.restore-archive').forEach(button => {
+                button.addEventListener('click', function() {
+                    const archiveId = this.getAttribute('data-id');
+                    const archive = appData.archives.find(a => a.id.toString() === archiveId);
+                    
+                    if (archive) {
+                        showToast(`已還原存檔: ${archive.name}`, 'success');
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.download-archive').forEach(button => {
+                button.addEventListener('click', function() {
+                    const archiveId = this.getAttribute('data-id');
+                    const archive = appData.archives.find(a => a.id.toString() === archiveId);
+                    
+                    if (archive) {
+                        showToast(`已下載存檔: ${archive.name}`, 'success');
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.delete-archive').forEach(button => {
+                button.addEventListener('click', function() {
+                    const archiveId = this.getAttribute('data-id');
+                    const archiveName = this.getAttribute('data-name');
+                    
+                    // 設置刪除確認信息
+                    document.getElementById('delete-confirm-text').textContent = 
+                        `您確定要刪除存檔 ${archiveName} 嗎？`;
+                    
+                    // 存儲要刪除的存檔ID
+                    document.getElementById('confirm-delete').setAttribute('data-action', 'archive');
+                    document.getElementById('confirm-delete').setAttribute('data-id', archiveId);
+                    
+                    openModal('delete-modal');
+                });
+            });
+        }
+        
+        // 更新統計數據
+        function updateStatistics() {
+            // 計算各年級的打卡人數
+            const grade1Count = appData.records.filter(r => 
+                r.class.startsWith('一年級')
+            ).length;
+            
+            const grade2Count = appData.records.filter(r => 
+                r.class.startsWith('二年級')
+            ).length;
+            
+            const grade3Count = appData.records.filter(r => 
+                r.class.startsWith('三年級')
+            ).length;
+            
+            const totalCount = appData.records.length;
+            
+            // 更新統計數字
+            document.getElementById('grade1-count').textContent = grade1Count;
+            document.getElementById('grade2-count').textContent = grade2Count;
+            document.getElementById('grade3-count').textContent = grade3Count;
+            document.getElementById('total-count').textContent = totalCount;
+            
+            // 更新圖表
+            initChart();
+        }
+        
+        // 保存數據到本地存儲
+        function saveData() {
+            localStorage.setItem('readingCheckinData', JSON.stringify(appData));
+        }
+        
+        // 從本地存儲加載數據
+        function loadData() {
+            const savedData = localStorage.getItem('readingCheckinData');
+            if (savedData) {
+                appData = JSON.parse(savedData);
+            }
+        }
+    </script>
+</body>
+</html>
